@@ -1,0 +1,91 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  triage:
+    # Evita bucles: ignora eventos originados por bots (incluido github-actions[bot])
+    if: github.event.sender.type != 'Bot'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Issue Triage
+        id: claude-triage
+        uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_args: >-
+            --allowedTools "Read,Grep,Glob,Bash(gh label list:*),Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh api:*)"
+          prompt: |
+            Eres un triador técnico para el issue #${{ github.event.issue.number }} del repositorio ${{ github.repository }} (Vanilla JS Tetris, ver CLAUDE.md).
+
+            Objetivo: (1) aplicar las etiquetas apropiadas y (2) publicar/actualizar un único comentario de diagnóstico técnico con plan de fix. NO modifiques archivos, no crees ramas ni PRs, no cierres el issue.
+
+            Pasos:
+
+            1. Lee el issue completo:
+               gh issue view ${{ github.event.issue.number }} --json title,body,labels,comments
+
+            2. Lee CLAUDE.md para entender la arquitectura (game.js, index.html, style.css) y los gotchas conocidos (canvas hardcodeado, intervalo de caída duplicado en init()/clearLines(), endGame() dentro de loop() sin cortar el requestAnimationFrame, rotación CW con kicks simples, teclado por e.code). Luego usa Read/Grep sobre game.js, index.html y style.css según lo que describa el issue para localizar las funciones y líneas implicadas.
+
+            3. Etiquetado:
+               - Lista las etiquetas existentes: gh label list
+               - Elige SOLO entre esas etiquetas (máximo 3). Nunca crees etiquetas nuevas (prohibido "gh label create"). Nunca quites etiquetas que ya tenga el issue puestas por una persona.
+               - Si el issue no da información suficiente para diagnosticar, incluye la etiqueta "question".
+               - Aplica con: gh issue edit ${{ github.event.issue.number }} --add-label "label1,label2"
+
+            4. Diagnóstico como comentario único y editable:
+               - Todo comentario tuyo debe empezar EXACTAMENTE por la línea: <!-- claude-triage -->
+               - Busca si ya existe un comentario tuyo previo:
+                 gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments --jq '.[] | select(.body | startswith("<!-- claude-triage -->")) | .id'
+               - Si existe un id, actualízalo (no crees uno nuevo):
+                 gh api --method PATCH repos/${{ github.repository }}/issues/comments/<id> -f body=@archivo.md
+               - Si no existe, créalo:
+                 gh api --method POST repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments -f body=@archivo.md
+               - Escribe el contenido del comentario en un archivo temporal antes de llamar a gh api con -f body=@archivo.md.
+
+            5. Formato del comentario (en español; el proyecto y su UI están en español):
+
+               <!-- claude-triage -->
+               ## Diagnóstico automático
+
+               Resumen en 1-2 frases.
+
+               ### Clasificación
+               Tipo de issue (bug / mejora / duda / documentación) y etiquetas aplicadas.
+
+               ### Reproducción
+               Pasos deducidos del reporte. Si faltan datos, pide explícitamente lo necesario (navegador, pasos exactos, capturas).
+
+               ### Causa raíz probable
+               Funciones y ubicaciones concretas con formato game.js:123, referenciando funciones reales como loop(), lockPiece(), tryRotate(), clearLines(), spawn(), collide(), merge().
+
+               ### Plan de solución
+               Cambios propuestos, por archivo, en orden lógico de implementación.
+
+               ### Riesgos / gotchas
+               Menciona los de CLAUDE.md que apliquen a este caso (p. ej. tocar COLS/ROWS/BLOCK exige actualizar a mano el width/height de #board en index.html; el intervalo de caída 1000 y max(100, 1000-(level-1)*90) está duplicado en init() y clearLines(); loop() sigue pidiendo frames tras game over).
+
+               ### Criterios de aceptación
+               Lista verificable de condiciones para considerar resuelto el issue.
+
+               ### Confianza
+               Alta / media / baja, y qué información subiría la confianza si es baja.
+
+               ---
+               Para implementar: comenta `@claude implementa el plan de este diagnóstico`
+
+            6. Verifica al final que el issue tiene exactamente un comentario que empieza por "<!-- claude-triage -->" (no más de uno).
