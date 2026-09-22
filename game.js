@@ -48,13 +48,25 @@ const restartBtn = document.getElementById('restart-btn');
 const themeToggle = document.getElementById('theme-toggle');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
-let theme = localStorage.getItem(THEME_STORAGE_KEY) === 'light' ? 'light' : 'dark';
+let theme = readStoredTheme() === 'light' ? 'light' : 'dark';
+
+function readStoredTheme() {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY);
+  } catch (e) {
+    return null;
+  }
+}
 
 function applyTheme(t) {
   theme = t;
   document.body.classList.toggle('light-theme', theme === 'light');
   themeToggle.textContent = theme === 'light' ? '☀️' : '🌙';
-  localStorage.setItem(THEME_STORAGE_KEY, theme);
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch (e) {
+    // almacenamiento no disponible (p. ej. modo privado estricto o iframe restringido)
+  }
 }
 
 applyTheme(theme);
