@@ -14,6 +14,7 @@ const COLORS = [
   '#90caf9', // J - azul pálido
   '#ffb74d', // L - orange
   '#b0bec5', // Tuerca - gris metálico
+  '#ffeb3b', // Rayo - amarillo
 ];
 
 const PIECES = [
@@ -26,7 +27,14 @@ const PIECES = [
   [[6,0,0],[6,6,6],[0,0,0]],                  // J
   [[0,0,7],[7,7,7],[0,0,0]],                  // L
   [[8,8,8],[8,0,8],[8,8,8]],                  // Tuerca
+  [[9]],                                       // Rayo (powerup)
 ];
+
+const RAYO = 9;
+const RAYO_CHANCE = 0.05;
+// Número de piezas normales entre garantías de rayo por nivel (mín/máx)
+const RAYO_GUARANTEE_MIN = 5;
+const RAYO_GUARANTEE_SPAN = 11;
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
 
@@ -50,6 +58,7 @@ const restartBtn = document.getElementById('restart-btn');
 const themeToggle = document.getElementById('theme-toggle');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let rayoPending, rayoCountdown;
 let theme = readStoredTheme() === 'light' ? 'light' : 'dark';
 
 function readStoredTheme() {
@@ -77,8 +86,22 @@ function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
 }
 
+function resetRayoForLevel() {
+  rayoPending = true;
+  rayoCountdown = RAYO_GUARANTEE_MIN + Math.floor(Math.random() * (RAYO_GUARANTEE_SPAN + 1));
+}
+
 function randomPiece() {
-  const type = Math.floor(Math.random() * (PIECES.length - 1)) + 1;
+  rayoCountdown--;
+  let type;
+  if (rayoPending && rayoCountdown <= 0) {
+    type = RAYO;
+  } else if (Math.random() < RAYO_CHANCE) {
+    type = RAYO;
+  } else {
+    type = Math.floor(Math.random() * (RAYO - 1)) + 1;
+  }
+  if (type === RAYO) rayoPending = false;
   const shape = PIECES[type].map(row => [...row]);
   return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
 }
@@ -124,6 +147,15 @@ function merge() {
         board[current.y + r][current.x + c] = current.shape[r][c];
 }
 
+function addLines(n) {
+  const prevLevel = level;
+  lines += n;
+  level = Math.floor(lines / 10) + 1;
+  dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+  if (level > prevLevel) resetRayoForLevel();
+  updateHUD();
+}
+
 function clearLines() {
   let cleared = 0;
   for (let r = ROWS - 1; r >= 0; r--) {
@@ -135,12 +167,24 @@ function clearLines() {
     }
   }
   if (cleared) {
-    lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
-    level = Math.floor(lines / 10) + 1;
-    dropInterval = Math.max(100, 1000 - (level - 1) * 90);
-    updateHUD();
+    addLines(cleared);
   }
+}
+
+function strikeLightning(x, y) {
+  let count = 0;
+  for (let r = 0; r < ROWS; r++) {
+    if (board[r][x]) count++;
+    board[r][x] = 0;
+  }
+  for (let c = 0; c < COLS; c++) {
+    if (c !== x && board[y][c]) count++;
+  }
+  board.splice(y, 1);
+  board.unshift(new Array(COLS).fill(0));
+  score += count * 10 * level;
+  addLines(1);
 }
 
 function ghostY() {
@@ -167,8 +211,12 @@ function softDrop() {
 }
 
 function lockPiece() {
-  merge();
-  clearLines();
+  if (current.type === RAYO) {
+    strikeLightning(current.x, current.y);
+  } else {
+    merge();
+    clearLines();
+  }
   spawn();
 }
 
@@ -196,6 +244,13 @@ function drawBlock(context, x, y, colorIndex, size, alpha) {
   // highlight
   context.fillStyle = THEME_COLORS[theme].highlight;
   context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+  if (colorIndex === RAYO) {
+    context.font = `${Math.floor(size * 0.7)}px sans-serif`;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillStyle = '#3e2723';
+    context.fillText('⚡', x * size + size / 2, y * size + size / 2 + 1);
+  }
   context.globalAlpha = 1;
 }
 
@@ -297,6 +352,7 @@ function init() {
   dropInterval = 1000;
   dropAccum = 0;
   lastTime = performance.now();
+  resetRayoForLevel();
   next = randomPiece();
   spawn();
   updateHUD();

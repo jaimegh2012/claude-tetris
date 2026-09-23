@@ -20,6 +20,8 @@ Three files, all logic in `game.js` (plain `<script>`, `'use strict'`, global st
 
 Piece lifecycle: `randomPiece()` -> `spawn()` (`current = next`, new `next`; game over if spawn collides) -> `collide()`-checked moves -> `lockPiece()` = `merge()` + `clearLines()` + `spawn()`. Board cells hold `0` or color index 1–8; `PIECES` and `COLORS` are indexed by the same type number (index 0 is `null`). Type 8 (`Tuerca`) is a 3×3 ring with an empty center cell.
 
+Type 9 (`RAYO`) is a 1×1 powerup piece, excluded from the normal 1–8 random pool. `randomPiece()` spawns it with probability `RAYO_CHANCE`, or forces it via a per-level countdown (`rayoPending`/`rayoCountdown`, reset by `resetRayoForLevel()` in `init()` and whenever `addLines()` bumps `level`) so every level guarantees at least one. `lockPiece()` branches on `current.type === RAYO`: instead of `merge()` + `clearLines()`, it calls `strikeLightning(x, y)`, which clears the piece's full row and column (row collapses like a normal line clear via `splice`/`unshift`; column cells are just zeroed) and awards `10 * level` per destroyed cell plus 1 line via the shared `addLines()` helper (also used by `clearLines()`).
+
 Drop paths are separate: gravity in `loop()`, `softDrop()` (+1/row), `hardDrop()` (+2/row via `ghostY()`). All converge on `lockPiece()`.
 
 ## Gotchas
