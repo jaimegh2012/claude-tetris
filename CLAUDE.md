@@ -24,6 +24,8 @@ Type 9 (`RAYO`) is a 1×1 powerup piece, excluded from the normal 1–8 random p
 
 Drop paths are separate: gravity in `loop()`, `softDrop()` (+1/row), `hardDrop()` (+2/row via `ghostY()`). All converge on `lockPiece()`.
 
+Visual skins: `SKINS = { retro, neon, pastel, pixel }` (near `COLORS`/`THEME_COLORS`), each with a `colors` array (same 0–9 indexing as `PIECES`/`COLORS`; `retro`/`pixel` just reference the original `COLORS` array) plus optional flags (`glow`, `forceDarkBg`, `rounded`, `texture`). `drawBlock()` now reads `SKINS[currentSkin].colors[colorIndex]` instead of `COLORS` directly and branches its drawing on those flags: `glow` sets `context.shadowBlur`/`shadowColor` before filling and resets `shadowBlur = 0` at the end of the function (must stay reset or grid/HUD drawing after it inherits the glow); `rounded` uses `context.roundRect` when available, falling back to a plain `fillRect`; `texture` calls `drawPixelTexture()`, which subdivides the block into a 4×4 grid of alternating lighter/darker sub-squares with 1px dark borders. `draw()`/`drawNext()` fill the canvas black first when `SKINS[currentSkin].forceDarkBg` is set (neon only), independent of the light/dark `theme` toggle. Skin choice lives in `currentSkin`, persisted to `localStorage` (`tetris-skin`) via `applySkin()`/`readStoredSkin()`, mirroring the `theme`/`applyTheme()`/`readStoredTheme()` pattern; the `#skin-select` change handler calls `applySkin()` then `draw(); drawNext();` to repaint immediately without reload.
+
 ## Gotchas
 
 - Canvas size in `index.html` is hardcoded; changing `COLS`/`ROWS`/`BLOCK` in `game.js` requires updating `width`/`height` of `#board` by hand.
