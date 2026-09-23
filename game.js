@@ -7,7 +7,7 @@ const BLOCK = 30;
 const COLORS = [
   null,
   '#4dd0e1', // I - cyan
-  '#ffd54f', // O - yellow
+  '#9b2d3f', // O - rojo vino
   '#ba68c8', // T - purple
   '#81c784', // S - green
   '#e57373', // Z - red
