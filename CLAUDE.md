@@ -18,7 +18,7 @@ Three files, all logic in `game.js` (plain `<script>`, `'use strict'`, global st
 - `style.css` — dark theme.
 - `game.js` — module-level `let` vars (`board`, `current`, `next`, `score`, ...) reset in `init()`. `restartBtn` calls `init()`.
 
-Piece lifecycle: `randomPiece()` -> `spawn()` (`current = next`, new `next`; game over if spawn collides) -> `collide()`-checked moves -> `lockPiece()` = `merge()` + `clearLines()` + `spawn()`. Board cells hold `0` or color index 1–7; `PIECES` and `COLORS` are indexed by the same type number (index 0 is `null`).
+Piece lifecycle: `randomPiece()` -> `spawn()` (`current = next`, new `next`; game over if spawn collides) -> `collide()`-checked moves -> `lockPiece()` = `merge()` + `clearLines()` + `spawn()`. Board cells hold `0` or color index 1–8; `PIECES` and `COLORS` are indexed by the same type number (index 0 is `null`). Type 8 (`Tuerca`) is a 3×3 ring with an empty center cell.
 
 Drop paths are separate: gravity in `loop()`, `softDrop()` (+1/row), `hardDrop()` (+2/row via `ghostY()`). All converge on `lockPiece()`.
 
