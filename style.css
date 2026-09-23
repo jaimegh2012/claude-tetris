@@ -99,6 +99,18 @@ body {
   line-height: 1;
 }
 
+#skin-select {
+  background: var(--theme-toggle-bg);
+  color: var(--theme-toggle-text);
+  border: 1px solid var(--theme-toggle-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  line-height: 1;
+}
+
 .game-container {
   display: flex;
   gap: 20px;
