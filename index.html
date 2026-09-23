@@ -51,11 +51,48 @@
       <div class="overlay-box">
         <p id="overlay-title">GAME OVER</p>
         <p id="overlay-score"></p>
+        <div id="gameover-records-section" class="hidden">
+          <div id="gameover-name-entry" class="hidden">
+            <input id="player-name-input" type="text" maxlength="12" placeholder="Tu nombre" autocomplete="off" />
+            <button id="save-record-btn" type="button">Guardar</button>
+          </div>
+          <div class="records-summary">
+            <span>Combo máx: <strong id="gameover-best-combo">0</strong></span>
+            <span>Líneas máx: <strong id="gameover-max-lines">0</strong></span>
+          </div>
+          <table class="records-table">
+            <thead>
+              <tr><th>#</th><th>Nombre</th><th>Puntos</th><th>Líneas</th><th>Nivel</th></tr>
+            </thead>
+            <tbody id="gameover-records-body"></tbody>
+          </table>
+          <button id="reset-records-btn-gameover" type="button" class="reset-records-btn">Resetear records</button>
+        </div>
         <button id="restart-btn">Reiniciar</button>
+      </div>
+    </div>
+
+    <div id="start-screen" class="overlay">
+      <div class="overlay-box start-box">
+        <h2 id="start-title">TETRIS</h2>
+        <div class="records-summary">
+          <span>Combo máx: <strong id="start-best-combo">0</strong></span>
+          <span>Líneas máx: <strong id="start-max-lines">0</strong></span>
+        </div>
+        <table class="records-table">
+          <thead>
+            <tr><th>#</th><th>Nombre</th><th>Puntos</th><th>Líneas</th><th>Nivel</th></tr>
+          </thead>
+          <tbody id="start-records-body"></tbody>
+        </table>
+        <div class="start-actions">
+          <button id="play-btn" type="button">Jugar</button>
+          <button id="reset-records-btn-start" type="button" class="reset-records-btn">Resetear records</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <script src="game.js?v=5"></script>
+  <script src="game.js?v=7"></script>
 </body>
 </html>
